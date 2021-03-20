@@ -52,6 +52,7 @@ func (n fieldNames) name(offset uint32) string {
 func (n fieldNames) decode(dec *encoding.Decoder) error {
 	// TODO sniffer - python client texts are returned differently?
 	// - double check offset calc (CESU8 issue?)
+	var err error
 	pos := uint32(0)
 	for i, on := range n {
 		diff := int(on.offset - pos)
@@ -59,14 +60,14 @@ func (n fieldNames) decode(dec *encoding.Decoder) error {
 			dec.Skip(diff)
 		}
 		size := int(dec.Byte())
-		b, err := dec.CESU8Bytes(size)
-		if err != nil {
-			return err
+		b, decodeErr := dec.CESU8Bytes(size)
+		if decodeErr != nil { // do not return here -> read stream would be broken
+			err = decodeErr
 		}
 		n[i].name = string(b)
 		pos += uint32(1 + size + diff) // len byte + size + diff
 	}
-	return nil
+	return err
 }
 
 func resizeFieldValues(size int, values []driver.Value) []driver.Value {

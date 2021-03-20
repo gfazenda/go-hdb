@@ -179,6 +179,7 @@ func (s *Session) QueryDirect(query string, commit bool) (driver.Rows, error) {
 			resSet.resultFields = qr.fields
 			s.pr.read(resSet)
 			qr.fieldValues = resSet.fieldValues
+			qr.decodeErrors = resSet.decodeErrors
 			qr.attributes = ph.partAttributes
 		}
 	}); err != nil {
@@ -532,6 +533,7 @@ func (s *Session) readCall(outputFields []*ParameterField) (*callResult, []locat
 			outPrms.outputFields = cr.outputFields
 			s.pr.read(outPrms)
 			cr.fieldValues = outPrms.fieldValues
+			cr.decodeErrors = outPrms.decodeErrors
 		case pkResultMetadata:
 			/*
 				procedure call with table parameters does return metadata for each table
@@ -548,6 +550,7 @@ func (s *Session) readCall(outputFields []*ParameterField) (*callResult, []locat
 			resSet.resultFields = qr.fields
 			s.pr.read(resSet)
 			qr.fieldValues = resSet.fieldValues
+			qr.decodeErrors = resSet.decodeErrors
 			qr.attributes = ph.partAttributes
 		case pkResultsetID:
 			s.pr.read((*resultsetID)(&qr.rsID))
@@ -598,6 +601,7 @@ func (s *Session) Query(pr *PrepareResult, args []interface{}, commit bool) (dri
 			resSet.resultFields = qr.fields
 			s.pr.read(resSet)
 			qr.fieldValues = resSet.fieldValues
+			qr.decodeErrors = resSet.decodeErrors
 			qr.attributes = ph.partAttributes
 		}
 	}); err != nil {
@@ -620,8 +624,9 @@ func (s *Session) fetchNext(qr *queryResult) error {
 	return s.pr.iterateParts(func(ph *partHeader) {
 		if ph.partKind == pkResultset {
 			s.pr.read(resSet)
-			qr.attributes = ph.partAttributes
 			qr.fieldValues = resSet.fieldValues
+			qr.decodeErrors = resSet.decodeErrors
+			qr.attributes = ph.partAttributes
 		}
 	})
 }
@@ -840,6 +845,7 @@ func (s *Session) encodeLobs(cr *callResult, ids []locatorID, inPrmFields []*Par
 				outPrms.outputFields = cr.outputFields
 				s.pr.read(outPrms)
 				cr.fieldValues = outPrms.fieldValues
+				cr.decodeErrors = outPrms.decodeErrors
 			case pkWriteLobReply:
 				s.pr.read(lobReply)
 				ids = lobReply.ids

@@ -304,6 +304,7 @@ func (p *inputParameters) encode(enc *encoding.Encoder) error {
 type outputParameters struct {
 	outputFields []*ParameterField
 	fieldValues  []driver.Value
+	decodeErrors decodeErrors
 }
 
 func (p *outputParameters) String() string {
@@ -319,7 +320,7 @@ func (p *outputParameters) decode(dec *encoding.Decoder, ph *partHeader) error {
 		for j, f := range p.outputFields {
 			var err error
 			if p.fieldValues[i*cols+j], err = f.decodeRes(dec); err != nil {
-				return err
+				p.decodeErrors = append(p.decodeErrors, &decodeError{row: i, fieldName: f.name(), s: err.Error()}) // collect decode / conversion errors
 			}
 		}
 	}
