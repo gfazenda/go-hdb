@@ -1,9 +1,32 @@
 Release Notes
 =============
 
+## Release 0.104
+
+#### Release Notes
+
+- Added complete support of HANA version 4
+
+#### Incompatibilities
+
+- HANA version 4 does not continue to support the following data types: shorttext, alphanum, text, bintext
+- HANA 4 changes the reported database type names for
+  - char to nchar
+  - varchar to nvarchar
+  - clob to nclob
+
 ## Release 0.103
 
 #### Minor revisions
+
+Release 0.103.3 (upgrade urgency: medium)
+
+- Fixed runtime error raised by missing error check executing sql statements
+- Added spatial encoders, an example and additional tests
+
+Release 0.103.2 (upgrade urgency: medium)
+
+- Fixed conversion issue selecting spatial types
 
 Release 0.103.1 (upgrade urgency: low)
 

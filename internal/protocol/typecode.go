@@ -80,6 +80,9 @@ const (
 	tcFixed12           typeCode = 0x52
 	tcCiphertext        typeCode = 0x5A
 
+	// special null values
+	tcSecondtimeNull typeCode = 0xB0
+
 	// additional internal typecodes
 	tcTableRef  typeCode = 0x7e // 126
 	tcTableRows typeCode = 0x7f // 127
@@ -89,16 +92,8 @@ func (tc typeCode) isLob() bool {
 	return tc == tcClob || tc == tcNclob || tc == tcBlob || tc == tcText || tc == tcBintext || tc == tcLocator || tc == tcNlocator
 }
 
-func (tc typeCode) isCharBased() bool {
-	return tc == tcNvarchar || tc == tcNstring || tc == tcNclob || tc == tcText || tc == tcBintext
-}
-
 func (tc typeCode) isVariableLength() bool {
 	return tc == tcChar || tc == tcNchar || tc == tcVarchar || tc == tcNvarchar || tc == tcBinary || tc == tcVarbinary || tc == tcShorttext || tc == tcAlphanum
-}
-
-func (tc typeCode) isIntegerType() bool {
-	return tc == tcTinyint || tc == tcSmallint || tc == tcInteger || tc == tcBigint
 }
 
 func (tc typeCode) isDecimalType() bool {
@@ -107,20 +102,27 @@ func (tc typeCode) isDecimalType() bool {
 
 //
 func (tc typeCode) supportNullValue() bool {
-	/*
-		(*1)
-		HDB bug: secondtime null value cannot be set by setting high bit
-		- trying so, gives:
-		  SQL HdbError 1033 - error while parsing protocol: no such data type: type_code=192, index=2
+	// boolean values: false =:= 0; null =:= 1; true =:= 2
+	return !(tc == tcBoolean)
+}
 
-		Traffic analysis of python client (https://pypi.org/project/hdbcli) resulted in:
-		- set null value constant directly instead of using high bit
+func (tc typeCode) nullValue() typeCode {
+	if tc == tcSecondtime {
+		/*
+			HDB bug: secondtime null value cannot be set by setting high bit
+			- trying so, gives:
+			  SQL HdbError 1033 - error while parsing protocol: no such data type: type_code=192, index=2
 
-		(*2)
-		boolean: use false =:= 0; null =:= 1; true =:= 2
+			HDB version 2: Traffic analysis of python client (https://pypi.org/project/hdbcli) resulted in:
+			- set null value constant directly instead of using high bit
 
-	*/
-	return !(tc == tcBoolean || tc == tcSecondtime)
+			HDB version 4: Setting null value constant does not work anymore
+			- secondtime null value typecode is 0xb0 (decimal: 176) instead of 0xc0 (decimal: 192)
+			- null typecode 0xb0 does work for HDB version 2 as well
+		*/
+		return tcSecondtimeNull
+	}
+	return tc | 0x80 // type code null value: set high bit (like documented in hdb protocol spec)
 }
 
 // see hdbclient
@@ -162,7 +164,7 @@ func (tc typeCode) dataType() DataType {
 		return DtTime
 	case tcDecimal, tcFixed8, tcFixed12, tcFixed16:
 		return DtDecimal
-	case tcChar, tcVarchar, tcString, tcAlphanum, tcNchar, tcNvarchar, tcNstring, tcShorttext, tcTableRef:
+	case tcChar, tcVarchar, tcString, tcAlphanum, tcNchar, tcNvarchar, tcNstring, tcShorttext, tcStPoint, tcStGeometry, tcTableRef:
 		return DtString
 	case tcBinary, tcVarbinary:
 		return DtBytes
@@ -222,6 +224,8 @@ func (tc typeCode) fieldType(length, fraction int) fieldType {
 		return cesu8Type
 	case tcBinary, tcVarbinary:
 		return varType
+	case tcStPoint, tcStGeometry:
+		return hexType
 	case tcBlob, tcClob, tcLocator:
 		return lobVarType
 	case tcNclob, tcText, tcNlocator:
