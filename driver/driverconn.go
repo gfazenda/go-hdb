@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package driver
 
-// ServerInfo contains hdb server information.
-type ServerInfo struct {
-	Version *HDBVersion
-}
+import (
+	"github.com/SAP/go-hdb/driver/common"
+)
 
 // DriverConn enhances a connection with go-hdb specific connection functions.
 type DriverConn interface {
-	ServerInfo() *ServerInfo
+	ServerInfo() *common.ServerInfo
 }

@@ -150,7 +150,7 @@ func HDBVersion(db *sql.DB) (hdbVersion *common.HDBVersion, err error) {
 	}
 
 	conn.Raw(func(driverConn interface{}) error {
-		hdbVersion = driverConn.(common.DriverConn).ServerInfo().Version
+		hdbVersion = driverConn.(DriverConn).ServerInfo().Version
 		return nil
 	})
 	return hdbVersion, nil

@@ -206,23 +206,23 @@ func (l *connLock) unlock() {
 
 //  check if conn implements all required interfaces
 var (
-	_ driver.Conn               = (*Conn)(nil)
-	_ driver.ConnPrepareContext = (*Conn)(nil)
-	_ driver.Pinger             = (*Conn)(nil)
-	_ driver.ConnBeginTx        = (*Conn)(nil)
-	_ driver.ExecerContext      = (*Conn)(nil)
-	_ driver.QueryerContext     = (*Conn)(nil)
-	_ driver.NamedValueChecker  = (*Conn)(nil)
-	_ driver.SessionResetter    = (*Conn)(nil)
-	_ common.DriverConn         = (*Conn)(nil) // go-hdb enhancements
+	_ driver.Conn               = (*conn)(nil)
+	_ driver.ConnPrepareContext = (*conn)(nil)
+	_ driver.Pinger             = (*conn)(nil)
+	_ driver.ConnBeginTx        = (*conn)(nil)
+	_ driver.ExecerContext      = (*conn)(nil)
+	_ driver.QueryerContext     = (*conn)(nil)
+	_ driver.NamedValueChecker  = (*conn)(nil)
+	_ driver.SessionResetter    = (*conn)(nil)
+	_ DriverConn                = (*conn)(nil) // go-hdb enhancements
 
 	// obsolete
-	//_ driver.Execer             = (*Conn)(nil) //go 1.9 issue (ExecerContext is only called if Execer is implemented)
-	//_ driver.Queryer            = (*Conn)(nil) //go 1.9 issue (QueryerContext is only called if Queryer is implemented)
+	//_ driver.Execer             = (*conn)(nil) //go 1.9 issue (ExecerContext is only called if Execer is implemented)
+	//_ driver.Queryer            = (*conn)(nil) //go 1.9 issue (QueryerContext is only called if Queryer is implemented)
 )
 
 // connHook is a hook for testing.
-var connHook func(c *Conn, op int)
+var connHook func(c *conn, op int)
 
 // connection hook operations
 const (
@@ -231,7 +231,7 @@ const (
 )
 
 // Conn is the implementation of the database/sql/driver Conn interface.
-type Conn struct {
+type conn struct {
 	// Holding connection lock in QueryResultSet (see rows.onClose)
 	/*
 		As long as a session is in query mode no other sql statement must be executed.
@@ -258,17 +258,17 @@ func newConn(ctx context.Context, ctr *Connector) (driver.Conn, error) {
 	ctr.mu.RLock() // lock connector
 	defer ctr.mu.RUnlock()
 
-	conn, err := ctr.dialer.DialContext(ctx, ctr.host, dial.DialerOptions{Timeout: ctr.timeout, TCPKeepAlive: ctr.tcpKeepAlive})
+	netConn, err := ctr.dialer.DialContext(ctx, ctr.host, dial.DialerOptions{Timeout: ctr.timeout, TCPKeepAlive: ctr.tcpKeepAlive})
 	if err != nil {
 		return nil, err
 	}
 
 	// is TLS connection requested?
 	if ctr.tlsConfig != nil {
-		conn = tls.Client(conn, ctr.tlsConfig)
+		netConn = tls.Client(netConn, ctr.tlsConfig)
 	}
 
-	dbConn := &dbConn{conn: conn, timeout: ctr.timeout}
+	dbConn := &dbConn{conn: netConn, timeout: ctr.timeout}
 	// buffer connection
 	rw := bufio.NewReadWriter(bufio.NewReaderSize(dbConn, ctr.bufferSize), bufio.NewWriterSize(dbConn, ctr.bufferSize))
 
@@ -291,7 +291,7 @@ func newConn(ctx context.Context, ctr *Connector) (driver.Conn, error) {
 		return nil, err
 	}
 
-	c := &Conn{ctr: ctr, dbConn: dbConn, session: session, scanner: &scanner.Scanner{}, closed: make(chan struct{})}
+	c := &conn{ctr: ctr, dbConn: dbConn, session: session, scanner: &scanner.Scanner{}, closed: make(chan struct{})}
 	if ctr.defaultSchema != "" {
 		if _, err := c.ExecContext(ctx, fmt.Sprintf(setDefaultSchema, Identifier(ctr.defaultSchema)), nil); err != nil {
 			return nil, err
@@ -307,7 +307,7 @@ func newConn(ctx context.Context, ctr *Connector) (driver.Conn, error) {
 	return c, nil
 }
 
-func (c *Conn) pinger(d time.Duration, done <-chan struct{}) {
+func (c *conn) pinger(d time.Duration, done <-chan struct{}) {
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
 
@@ -323,7 +323,7 @@ func (c *Conn) pinger(d time.Duration, done <-chan struct{}) {
 }
 
 // Ping implements the driver.Pinger interface.
-func (c *Conn) Ping(ctx context.Context) (err error) {
+func (c *conn) Ping(ctx context.Context) (err error) {
 	if err := c.tryLock(0); err != nil {
 		return err
 	}
@@ -349,7 +349,7 @@ func (c *Conn) Ping(ctx context.Context) (err error) {
 }
 
 // ResetSession implements the driver.SessionResetter interface.
-func (c *Conn) ResetSession(ctx context.Context) error {
+func (c *conn) ResetSession(ctx context.Context) error {
 	c.lock()
 	defer c.unlock()
 
@@ -362,7 +362,7 @@ func (c *Conn) ResetSession(ctx context.Context) error {
 }
 
 // PrepareContext implements the driver.ConnPrepareContext interface.
-func (c *Conn) PrepareContext(ctx context.Context, query string) (stmt driver.Stmt, err error) {
+func (c *conn) PrepareContext(ctx context.Context, query string) (stmt driver.Stmt, err error) {
 	if err := c.tryLock(0); err != nil {
 		return nil, err
 	}
@@ -419,7 +419,7 @@ func (c *Conn) PrepareContext(ctx context.Context, query string) (stmt driver.St
 }
 
 // Close implements the driver.Conn interface.
-func (c *Conn) Close() error {
+func (c *conn) Close() error {
 	c.lock()
 	defer c.unlock()
 
@@ -437,7 +437,7 @@ func (c *Conn) Close() error {
 }
 
 // BeginTx implements the driver.ConnBeginTx interface.
-func (c *Conn) BeginTx(ctx context.Context, opts driver.TxOptions) (tx driver.Tx, err error) {
+func (c *conn) BeginTx(ctx context.Context, opts driver.TxOptions) (tx driver.Tx, err error) {
 	if err := c.tryLock(0); err != nil {
 		return nil, err
 	}
@@ -483,7 +483,7 @@ func (c *Conn) BeginTx(ctx context.Context, opts driver.TxOptions) (tx driver.Tx
 }
 
 // QueryContext implements the driver.QueryerContext interface.
-func (c *Conn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (rows driver.Rows, err error) {
+func (c *conn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (rows driver.Rows, err error) {
 	if err := c.tryLock(lrNestedQuery); err != nil {
 		return nil, err
 	}
@@ -550,7 +550,7 @@ func (c *Conn) QueryContext(ctx context.Context, query string, args []driver.Nam
 }
 
 // ExecContext implements the driver.ExecerContext interface.
-func (c *Conn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (r driver.Result, err error) {
+func (c *conn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (r driver.Result, err error) {
 	if err := c.tryLock(0); err != nil {
 		return nil, err
 	}
@@ -592,7 +592,7 @@ func (c *Conn) ExecContext(ctx context.Context, query string, args []driver.Name
 }
 
 // CheckNamedValue implements the NamedValueChecker interface.
-func (c *Conn) CheckNamedValue(nv *driver.NamedValue) error {
+func (c *conn) CheckNamedValue(nv *driver.NamedValue) error {
 	// - called by sql driver for ExecContext and QueryContext
 	// - no check needs to be performed as ExecContext and QueryContext provided
 	//   with parameters will force the 'prepare way' (driver.ErrSkip)
@@ -603,8 +603,8 @@ func (c *Conn) CheckNamedValue(nv *driver.NamedValue) error {
 
 // Conn Raw access methods
 
-// ServerInfo returns parameters reported by hdb server.
-func (c *Conn) ServerInfo() *common.ServerInfo {
+// ServerInfo implements the common.DriverConn interface.
+func (c *conn) ServerInfo() *common.ServerInfo {
 	return c.session.ServerInfo()
 }
 
@@ -616,11 +616,11 @@ var (
 )
 
 type tx struct {
-	conn   *Conn
+	conn   *conn
 	closed bool
 }
 
-func newTx(conn *Conn) *tx { return &tx{conn: conn} }
+func newTx(conn *conn) *tx { return &tx{conn: conn} }
 
 func (t *tx) Commit() error   { return t.close(false) }
 func (t *tx) Rollback() error { return t.close(true) }
@@ -706,7 +706,7 @@ func (ap *argsPool) getNVArgs(nvargs []driver.NamedValue) []interface{} {
 var smallArgsPool = argsPool{} // rather small slices
 
 type stmt struct {
-	conn              *Conn
+	conn              *conn
 	query             string
 	pr                *p.PrepareResult
 	bulk, flush, many bool
@@ -715,17 +715,17 @@ type stmt struct {
 	args              []interface{} // bulk or many
 }
 
-func newStmt(conn *Conn, query string, bulk bool, bulkSize int, pr *p.PrepareResult) *stmt {
+func newStmt(conn *conn, query string, bulk bool, bulkSize int, pr *p.PrepareResult) *stmt {
 	return &stmt{conn: conn, query: query, pr: pr, bulk: bulk, bulkSize: bulkSize, trace: sqltrace.On()}
 }
 
 type callStmt struct {
-	conn  *Conn
+	conn  *conn
 	query string
 	pr    *p.PrepareResult
 }
 
-func newCallStmt(conn *Conn, query string, pr *p.PrepareResult) *callStmt {
+func newCallStmt(conn *conn, query string, pr *p.PrepareResult) *callStmt {
 	return &callStmt{conn: conn, query: query, pr: pr}
 }
 
