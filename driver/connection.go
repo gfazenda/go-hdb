@@ -20,9 +20,9 @@ import (
 
 	"github.com/SAP/go-hdb/driver/dial"
 	"github.com/SAP/go-hdb/driver/hdb"
+	p "github.com/SAP/go-hdb/driver/internal/protocol"
+	"github.com/SAP/go-hdb/driver/internal/protocol/scanner"
 	"github.com/SAP/go-hdb/driver/sqltrace"
-	p "github.com/SAP/go-hdb/internal/protocol"
-	"github.com/SAP/go-hdb/internal/protocol/scanner"
 )
 
 // Transaction isolation levels supported by hdb.

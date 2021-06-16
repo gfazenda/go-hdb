@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/SAP/go-hdb/driver/hdb"
-	p "github.com/SAP/go-hdb/internal/protocol"
+	p "github.com/SAP/go-hdb/driver/internal/protocol"
 )
 
 // DataType is the type definition for the supported database types.

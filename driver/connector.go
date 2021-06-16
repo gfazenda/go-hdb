@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/SAP/go-hdb/driver/dial"
-	"github.com/SAP/go-hdb/internal/container/vermap"
-	p "github.com/SAP/go-hdb/internal/protocol"
+	"github.com/SAP/go-hdb/driver/internal/container/vermap"
+	p "github.com/SAP/go-hdb/driver/internal/protocol"
 )
 
 // Data format version values.

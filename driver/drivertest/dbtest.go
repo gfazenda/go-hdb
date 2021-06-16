@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/SAP/go-hdb/internal/rand"
+	"github.com/SAP/go-hdb/driver/internal/rand"
 )
 
 const (
