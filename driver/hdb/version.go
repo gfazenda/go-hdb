@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package hdb
 
 import (
 	"fmt"
@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	hdbVersionMajor = iota
-	hdbVersionMinor
-	hdbVersionRevision
-	hdbVersionPatch
-	hdbVersionBuildID
-	hdbVersionCount
+	versionMajor = iota
+	versionMinor
+	versionRevision
+	versionPatch
+	versionBuildID
+	versionCount
 )
 
-// hdbVersionNumber holds the information of a hdb semantic version.
+// versionNumber holds the information of a hdb semantic version.
 //
 // u.vv.wwx.yy.zzzzzzzzzz
 //
@@ -36,12 +36,12 @@ const (
 // revision number: 045
 // patch number:    0
 // build id:        1575639312
-type hdbVersionNumber []uint64 // assumption: all fields are numeric
+type versionNumber []uint64 // assumption: all fields are numeric
 
-func parseHDBVersionNumber(s string) hdbVersionNumber {
-	vn := make([]uint64, hdbVersionCount)
+func parseVersionNumber(s string) versionNumber {
+	vn := make([]uint64, versionCount)
 
-	parts := strings.SplitN(s, ".", hdbVersionCount)
+	parts := strings.SplitN(s, ".", versionCount)
 	for i := 0; i < len(parts); i++ {
 		vn[i], _ = strconv.ParseUint(parts[i], 10, 64)
 	}
@@ -53,15 +53,15 @@ func formatUint64(i uint64, digits int) string {
 	return s[len(s)-digits:]
 }
 
-func (vn hdbVersionNumber) String() string {
-	s := fmt.Sprintf("%d.%s.%s.%s", vn[hdbVersionMajor], formatUint64(vn[hdbVersionMinor], 2), formatUint64(vn[hdbVersionRevision], 3), formatUint64(vn[hdbVersionPatch], 2))
-	if vn[hdbVersionBuildID] != 0 {
-		return fmt.Sprintf("%s.%d", s, vn[hdbVersionBuildID])
+func (vn versionNumber) String() string {
+	s := fmt.Sprintf("%d.%s.%s.%s", vn[versionMajor], formatUint64(vn[versionMinor], 2), formatUint64(vn[versionRevision], 3), formatUint64(vn[versionPatch], 2))
+	if vn[versionBuildID] != 0 {
+		return fmt.Sprintf("%s.%d", s, vn[versionBuildID])
 	}
 	return s
 }
 
-func (vn hdbVersionNumber) isZero() bool {
+func (vn versionNumber) isZero() bool {
 	for _, n := range vn {
 		if n != 0 {
 			return false
@@ -82,29 +82,29 @@ func compareUint64(u1, u2 uint64) int {
 }
 
 // Major returns the major field of a hdbVersionNumber.
-func (vn hdbVersionNumber) Major() uint64 { return vn[hdbVersionMajor] }
+func (vn versionNumber) Major() uint64 { return vn[versionMajor] }
 
 // Minor returns the minor field of a HDBVersionNumber.
-func (vn hdbVersionNumber) Minor() uint64 { return vn[hdbVersionMinor] }
+func (vn versionNumber) Minor() uint64 { return vn[versionMinor] }
 
 // SPS returns the sps field of a HDBVersionNumber.
-func (vn hdbVersionNumber) SPS() uint64 { return vn[hdbVersionRevision] / 10 }
+func (vn versionNumber) SPS() uint64 { return vn[versionRevision] / 10 }
 
 // Revision returns the revision field of a HDBVersionNumber.
-func (vn hdbVersionNumber) Revision() uint64 { return vn[hdbVersionRevision] }
+func (vn versionNumber) Revision() uint64 { return vn[versionRevision] }
 
 // Patch returns the patch field of a HDBVersionNumber.
-func (vn hdbVersionNumber) Patch() uint64 { return vn[hdbVersionPatch] }
+func (vn versionNumber) Patch() uint64 { return vn[versionPatch] }
 
 // BuildID returns the build id field of a HDBVersionNumber.
-func (vn hdbVersionNumber) BuildID() uint64 { return vn[hdbVersionBuildID] }
+func (vn versionNumber) BuildID() uint64 { return vn[versionBuildID] }
 
 // Compare compares the version number with a second version number vn2. The result will be
 //  0 in case the two versions are equal,
 // -1 in case version v has lower precedence than c2,
 //  1 in case version v has higher precedence than c2.
-func (vn hdbVersionNumber) compare(vn2 hdbVersionNumber) int {
-	for i := 0; i < (hdbVersionCount - 1); i++ { // ignore buildID - might not be ordered}
+func (vn versionNumber) compare(vn2 versionNumber) int {
+	for i := 0; i < (versionCount - 1); i++ { // ignore buildID - might not be ordered}
 		if r := compareUint64(vn[i], vn2[i]); r != 0 {
 			return r
 		}
@@ -113,7 +113,7 @@ func (vn hdbVersionNumber) compare(vn2 hdbVersionNumber) int {
 }
 
 // hdbVersionNumberOne - if HANA version 1 assume version 1.00 SPS 12.
-var hdbVersionNumberOne = parseHDBVersionNumber("1.00.120")
+var versionNumberOne = parseVersionNumber("1.00.120")
 
 // HDBVersion feature flags.
 const (
@@ -122,22 +122,22 @@ const (
 	HDBFConnectClientInfo        // HANA accepts ClientInfo as part of the connection process
 )
 
-var hdbFeatureAvailability = map[uint64]hdbVersionNumber{
-	HDBFServerVersion:     parseHDBVersionNumber("2.00.000"),
-	HDBFConnectClientInfo: parseHDBVersionNumber("2.00.042"),
+var hdbFeatureAvailability = map[uint64]versionNumber{
+	HDBFServerVersion:     parseVersionNumber("2.00.000"),
+	HDBFConnectClientInfo: parseVersionNumber("2.00.042"),
 }
 
-// HDBVersion is representing a hdb version.
-type HDBVersion struct {
-	hdbVersionNumber
+// Version is representing a hdb version.
+type Version struct {
+	versionNumber
 	feature uint64
 }
 
-// ParseHDBVersion parses a semantic hdb version string field.
-func ParseHDBVersion(s string) *HDBVersion {
-	number := parseHDBVersionNumber(s)
+// ParseVersion parses a semantic hdb version string field.
+func ParseVersion(s string) *Version {
+	number := parseVersionNumber(s)
 	if number.isZero() { // hdb 1.00 does not report version
-		number = hdbVersionNumberOne
+		number = versionNumberOne
 	}
 
 	var feature uint64
@@ -147,16 +147,16 @@ func ParseHDBVersion(s string) *HDBVersion {
 			feature |= f // add feature
 		}
 	}
-	return &HDBVersion{hdbVersionNumber: number, feature: feature}
+	return &Version{versionNumber: number, feature: feature}
 }
 
 // Compare compares the version with a second version v2. The result will be
 //  0 in case the two versions are equal,
 // -1 in case version v has lower precedence than c2,
 //  1 in case version v has higher precedence than c2.
-func (v *HDBVersion) Compare(v2 *HDBVersion) int {
-	return v.hdbVersionNumber.compare(v2.hdbVersionNumber)
+func (v *Version) Compare(v2 *Version) int {
+	return v.versionNumber.compare(v2.versionNumber)
 }
 
 // HasFeature returns true if HDBVersion does support feature - false otherwise.
-func (v *HDBVersion) HasFeature(feature uint64) bool { return v.feature&feature != 0 }
+func (v *Version) HasFeature(feature uint64) bool { return v.feature&feature != 0 }

@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/text/transform"
 
-	"github.com/SAP/go-hdb/driver/common"
+	"github.com/SAP/go-hdb/driver/hdb"
 	"github.com/SAP/go-hdb/internal/unicode"
 	"github.com/SAP/go-hdb/internal/unicode/cesu8"
 )
@@ -39,7 +39,7 @@ type Session struct {
 
 	sessionID     int64
 	serverOptions connectOptions
-	serverVersion *common.HDBVersion
+	hdbVersion    *hdb.Version
 
 	pr *protocolReader
 	pw *protocolWriter
@@ -69,19 +69,15 @@ func NewSession(ctx context.Context, rw *bufio.ReadWriter, cfg *SessionConfig) (
 		return nil, fmt.Errorf("invalid session id %d", s.sessionID)
 	}
 
-	s.serverVersion = common.ParseHDBVersion(s.serverOptions.fullVersionString())
+	s.hdbVersion = hdb.ParseVersion(s.serverOptions.fullVersionString())
 	return s, nil
 }
 
 // SessionID returns the session id of the hdb connection.
 func (s *Session) SessionID() int64 { return s.sessionID }
 
-// ServerInfo returnsinformation reported by hdb server.
-func (s *Session) ServerInfo() *common.ServerInfo {
-	return &common.ServerInfo{
-		Version: s.serverVersion,
-	}
-}
+// HDBVersion returns the hdb server version.
+func (s *Session) HDBVersion() *hdb.Version { return s.hdbVersion }
 
 func (s *Session) defaultClientOptions() connectOptions {
 	co := connectOptions{

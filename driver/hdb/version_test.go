@@ -2,30 +2,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package hdb
 
 import (
 	"testing"
 )
 
-func testHDBVersionNumberParse(t *testing.T) {
+func testVersionNumberParse(t *testing.T) {
 	var tests = []struct {
 		s string
-		v hdbVersionNumber
+		v versionNumber
 	}{
-		{"2.00.048.00", hdbVersionNumber{2, 0, 48, 0, 0}},
-		{"2.00.045.00.15756393121", hdbVersionNumber{2, 0, 45, 0, 15756393121}},
+		{"2.00.048.00", versionNumber{2, 0, 48, 0, 0}},
+		{"2.00.045.00.15756393121", versionNumber{2, 0, 45, 0, 15756393121}},
 	}
 
 	for i, test := range tests {
-		v := parseHDBVersionNumber(test.s)
+		v := parseVersionNumber(test.s)
 		if v.String() != test.s {
 			t.Fatalf("line: %d got: %s expected: %s", i, v, test.s)
 		}
 	}
 }
 
-func testHDBVersionNumberCompare(t *testing.T) {
+func testVersionNumberCompare(t *testing.T) {
 	var tests = []struct {
 		s1, s2 string
 		r      int
@@ -35,19 +35,19 @@ func testHDBVersionNumberCompare(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		v1 := parseHDBVersionNumber(test.s1)
-		v2 := parseHDBVersionNumber(test.s2)
+		v1 := parseVersionNumber(test.s1)
+		v2 := parseVersionNumber(test.s2)
 		if v1.compare(v2) != test.r {
 			t.Fatalf("line: %d expected: compare(%s,%s) = %d", i, v1, v2, test.r)
 		}
 	}
 }
 
-func testHDBVersionFeature(t *testing.T) {
+func testVersionFeature(t *testing.T) {
 	for f, cv1 := range hdbFeatureAvailability {
 		for _, cv2 := range hdbFeatureAvailability {
-			v1 := ParseHDBVersion(cv1.String())
-			v2 := ParseHDBVersion(cv2.String())
+			v1 := ParseVersion(cv1.String())
+			v2 := ParseVersion(cv2.String())
 
 			hasFeature := v2.Compare(v1) >= 0
 
@@ -58,14 +58,14 @@ func testHDBVersionFeature(t *testing.T) {
 	}
 }
 
-func TestHDBVersion(t *testing.T) {
+func TestVersion(t *testing.T) {
 	tests := []struct {
 		name string
 		fct  func(t *testing.T)
 	}{
-		{"parse", testHDBVersionNumberParse},
-		{"compare", testHDBVersionNumberCompare},
-		{"feature", testHDBVersionFeature},
+		{"parse", testVersionNumberParse},
+		{"compare", testVersionNumberCompare},
+		{"feature", testVersionFeature},
 	}
 
 	for _, test := range tests {

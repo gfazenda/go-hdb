@@ -13,12 +13,11 @@ import (
 	"log"
 
 	"github.com/SAP/go-hdb/driver"
-	"github.com/SAP/go-hdb/driver/common"
 	"github.com/SAP/go-hdb/driver/drivertest"
 )
 
-// ExampleDriverConn-ServerInfo shows how to retrieve hdb server info with the help of sql.Conn.Raw().
-func ExampleDriverConn_ServerInfo() {
+// ExampleConn-HDBVersion shows how to retrieve hdb server info with the help of sql.Conn.Raw().
+func ExampleConn_HDBVersion() {
 	connector, err := driver.NewConnector(drivertest.DefaultAttrs())
 	if err != nil {
 		log.Fatal(err)
@@ -34,7 +33,7 @@ func ExampleDriverConn_ServerInfo() {
 
 	conn.Raw(func(driverConn interface{}) error {
 		// Access driver.Conn methods.
-		log.Printf("hdb version: %s", driverConn.(common.DriverConn).ServerInfo().Version)
+		log.Printf("hdb version: %s", driverConn.(driver.Conn).HDBVersion())
 		return nil
 	})
 

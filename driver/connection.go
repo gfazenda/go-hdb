@@ -18,8 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SAP/go-hdb/driver/common"
 	"github.com/SAP/go-hdb/driver/dial"
+	"github.com/SAP/go-hdb/driver/hdb"
 	"github.com/SAP/go-hdb/driver/sqltrace"
 	p "github.com/SAP/go-hdb/internal/protocol"
 	"github.com/SAP/go-hdb/internal/protocol/scanner"
@@ -214,7 +214,7 @@ var (
 	_ driver.QueryerContext     = (*conn)(nil)
 	_ driver.NamedValueChecker  = (*conn)(nil)
 	_ driver.SessionResetter    = (*conn)(nil)
-	_ DriverConn                = (*conn)(nil) // go-hdb enhancements
+	_ Conn                      = (*conn)(nil) // go-hdb enhancements
 
 	// obsolete
 	//_ driver.Execer             = (*conn)(nil) //go 1.9 issue (ExecerContext is only called if Execer is implemented)
@@ -229,6 +229,11 @@ const (
 	choNone = iota
 	choStmtExec
 )
+
+// Conn enhances a connection with go-hdb specific connection functions.
+type Conn interface {
+	HDBVersion() *hdb.Version
+}
 
 // Conn is the implementation of the database/sql/driver Conn interface.
 type conn struct {
@@ -603,10 +608,8 @@ func (c *conn) CheckNamedValue(nv *driver.NamedValue) error {
 
 // Conn Raw access methods
 
-// ServerInfo implements the common.DriverConn interface.
-func (c *conn) ServerInfo() *common.ServerInfo {
-	return c.session.ServerInfo()
-}
+// HDBVersion implements the common.DriverConn interface.
+func (c *conn) HDBVersion() *hdb.Version { return c.session.HDBVersion() }
 
 //transaction
 
