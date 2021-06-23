@@ -7,6 +7,7 @@ package unicode
 
 import (
 	"errors"
+	"fmt"
 	"unicode/utf8"
 
 	"github.com/SAP/go-hdb/driver/internal/unicode/cesu8"
@@ -20,9 +21,24 @@ var (
 	Cesu8ToUtf8Transformer = new(cesu8ToUtf8Transformer)
 	// ErrInvalidUtf8 means that a transformer detected invalid UTF-8 data.
 	ErrInvalidUtf8 = errors.New("invalid UTF-8")
-	// ErrInvalidCesu8 means that a transformer detected invalid CESU-8 data.
-	ErrInvalidCesu8 = errors.New("invalid CESU-8")
 )
+
+// InvalidCesu8Error is the error raised when a transformer detects invalid CESU-8 data.
+type InvalidCesu8Error struct {
+	p int    // position of error in []byte
+	v []byte // value where error occurs
+}
+
+func (e *InvalidCesu8Error) Error() string {
+	return fmt.Sprintf("invalid CESU-8: %x at pos: %d", e.v, e.p)
+}
+
+func newInvalidCesu8Error(p int, v []byte) *InvalidCesu8Error {
+	// copy value
+	cv := make([]byte, len(v))
+	copy(cv, v)
+	return &InvalidCesu8Error{p: p, v: cv}
+}
 
 type utf8ToCesu8Transformer struct{ transform.NopResetter }
 
@@ -80,7 +96,7 @@ func (t *cesu8ToUtf8Transformer) Transform(dst, src []byte, atEOF bool) (nDst, n
 			}
 			r, n := cesu8.DecodeRune(src[i:])
 			if r == utf8.RuneError {
-				return j, i, ErrInvalidCesu8
+				return j, i, newInvalidCesu8Error(i, src[i:i+n])
 			}
 			m := utf8.RuneLen(r)
 			if m == -1 {

@@ -205,6 +205,45 @@ func checkAffectedRows(t *testing.T, result sql.Result, rowsExpected int64) {
 	}
 }
 
+func testCESUError(db *sql.DB, t *testing.T) {
+	testData := []string{
+		"2B301C39EDA2A81132306033",
+	}
+
+	tableName := driver.RandomIdentifier("cesuerror_")
+	if _, err := db.Exec(fmt.Sprintf("create table %s (s nvarchar(20))", tableName)); err != nil {
+		t.Fatal(err)
+	}
+
+	stmt, err := db.Prepare(fmt.Sprintf("insert into %s values(bintostr(?))", tableName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stmt.Close()
+
+	for _, s := range testData {
+		if _, err := stmt.Exec(s); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rows, err := db.Query(fmt.Sprintf("select s from %s", tableName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() { // will fail
+		// ...
+	}
+	switch err := rows.Err(); err {
+	case nil:
+		t.Fatal("invalid cesu-8 error expected")
+	default:
+		t.Log(err) // just print the (expected) error
+	}
+}
+
 func TestDriver(t *testing.T) {
 	tests := []struct {
 		name string
@@ -218,6 +257,7 @@ func TestDriver(t *testing.T) {
 		{"queryAttributeAlias", testQueryAttributeAlias},
 		{"rowsAffected", testRowsAffected},
 		{"upsert", testUpsert},
+		{"testCESUError", testCESUError},
 	}
 
 	connector, err := driver.NewConnector(drivertest.DefaultAttrs())
