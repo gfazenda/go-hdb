@@ -14,7 +14,7 @@ import (
 	"golang.org/x/text/transform"
 )
 
-const readScratchSize = 512 // used for skip as well - size not too small!
+const readScratchSize = 512 // used for skip as well - define size not too small!
 
 // Decoder decodes hdb protocol datatypes an basis of an io.Reader.
 type Decoder struct {
