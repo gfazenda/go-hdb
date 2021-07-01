@@ -11,7 +11,6 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/SAP/go-hdb/driver/internal/unicode"
 	"golang.org/x/text/transform"
 )
 
@@ -32,10 +31,10 @@ type Decoder struct {
 }
 
 // NewDecoder creates a new Decoder instance based on an io.Reader.
-func NewDecoder(rd io.Reader) *Decoder {
+func NewDecoder(rd io.Reader, decoder func() transform.Transformer) *Decoder {
 	return &Decoder{
 		rd: rd,
-		tr: unicode.Cesu8ToUtf8Transformer,
+		tr: decoder(),
 	}
 }
 
