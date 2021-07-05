@@ -60,11 +60,11 @@ func ExampleConn_DBConnectInfo() {
 
 	if err := conn.Raw(func(driverConn interface{}) error {
 		// Access driver.Conn methods.
-		ci, err := driverConn.(driver.Conn).DBConnectInfo(context.Background(), "SYSTEMDB")
+		ci, err := driverConn.(driver.Conn).DBConnectInfo(context.Background(), driverConn.(driver.Conn).DatabaseName())
 		if err != nil {
 			return err
 		}
-		log.Printf("db connect info: %v", ci)
+		log.Printf("db connect info: %s", ci)
 		return nil
 	}); err != nil {
 		log.Fatal(err)

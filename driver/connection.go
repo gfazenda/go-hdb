@@ -233,6 +233,7 @@ const (
 // Conn enhances a connection with go-hdb specific connection functions.
 type Conn interface {
 	HDBVersion() *hdb.Version
+	DatabaseName() string
 	DBConnectInfo(ctx context.Context, databaseName string) (*hdb.DBConnectInfo, error)
 }
 
@@ -611,8 +612,11 @@ func (c *conn) CheckNamedValue(nv *driver.NamedValue) error {
 
 // Conn Raw access methods
 
-// HDBVersion implements the common.DriverConn interface.
+// HDBVersion implements the Conn interface.
 func (c *conn) HDBVersion() *hdb.Version { return c.session.HDBVersion() }
+
+// DatabaseName implements the Conn interface.
+func (c *conn) DatabaseName() string { return c.session.DatabaseName() }
 
 // DBConnectInfo implements the Conn interface.
 func (c *conn) DBConnectInfo(ctx context.Context, databaseName string) (ci *hdb.DBConnectInfo, err error) {

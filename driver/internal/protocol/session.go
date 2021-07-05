@@ -78,6 +78,11 @@ func (s *Session) SessionID() int64 { return s.sessionID }
 // HDBVersion returns the hdb server version.
 func (s *Session) HDBVersion() *hdb.Version { return s.hdbVersion }
 
+// DatabaseName returns the database name.
+func (s *Session) DatabaseName() string {
+	return plainOptions(s.serverOptions).asString(int8(coDatabaseName))
+}
+
 func (s *Session) defaultClientOptions() connectOptions {
 	co := connectOptions{
 		int8(coDistributionProtocolVersion): optBooleanType(false),
