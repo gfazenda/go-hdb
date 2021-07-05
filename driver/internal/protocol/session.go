@@ -683,6 +683,30 @@ func (s *Session) Disconnect() error {
 	return nil
 }
 
+// DBConnectInfo provided hdb connection information.
+func (s *Session) DBConnectInfo(databaseName string) (*hdb.DBConnectInfo, error) {
+	ci := dbConnectInfo{int8(ciDatabaseName): optStringType(databaseName)}
+	if err := s.pw.write(s.sessionID, mtDBConnectInfo, false, ci); err != nil {
+		return nil, err
+	}
+
+	if err := s.pr.iterateParts(func(ph *partHeader) {
+		switch ph.partKind {
+		case pkDBConnectInfo:
+			s.pr.read(&ci)
+		}
+	}); err != nil {
+		return nil, err
+	}
+
+	return &hdb.DBConnectInfo{
+		DatabaseName: databaseName,
+		Host:         plainOptions(ci).asString(int8(ciHost)),
+		Port:         plainOptions(ci).asInt(int8(ciPort)),
+		IsConnected:  plainOptions(ci).asBool(int8(ciIsConnected)),
+	}, nil
+}
+
 // decodeLobs decodes (reads from db) output lob or result lob parameters.
 
 // read lob reply
