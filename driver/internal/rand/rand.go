@@ -14,6 +14,7 @@ const (
 	csAlphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 )
 
+// AlphanumReader is a global, shared instance of a random generator of alpha-numeric characters.
 var AlphanumReader = new(alphanumReader)
 
 type alphanumReader struct{}
