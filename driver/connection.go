@@ -214,7 +214,6 @@ var (
 	_ driver.QueryerContext     = (*conn)(nil)
 	_ driver.NamedValueChecker  = (*conn)(nil)
 	_ driver.SessionResetter    = (*conn)(nil)
-	_ driver.Validator          = (*conn)(nil)
 	_ Conn                      = (*conn)(nil) // go-hdb enhancements
 
 	// obsolete
@@ -369,14 +368,6 @@ func (c *conn) ResetSession(ctx context.Context) error {
 		return driver.ErrBadConn
 	}
 	return nil
-}
-
-// IsValid implements the driver.Validator interface.
-func (c *conn) IsValid() bool {
-	c.lock()
-	defer c.unlock()
-
-	return !c.dbConn.isBad()
 }
 
 // PrepareContext implements the driver.ConnPrepareContext interface.
