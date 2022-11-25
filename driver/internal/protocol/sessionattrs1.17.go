@@ -1,6 +1,3 @@
-//go:build !go1.18
-// +build !go1.18
-
 // SPDX-FileCopyrightText: 2014-2022 SAP SE
 //
 // SPDX-License-Identifier: Apache-2.0
